@@ -1,0 +1,11 @@
+[Unit]
+Description=Stethoscope Heartbeat Alerter
+After=network.target
+
+[Service]
+User=username   # Note: username must be specified
+ExecStart=/usr/bin/python3 /opt/stsc/heartbeat-alerter.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
