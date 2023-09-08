@@ -43,37 +43,43 @@ def send_pushover(message):
         print("Pushover sending error:", e)
 
 def periodic_check():
-    last_heartbeat = datetime.now()
-    reporting_interval_loop_count = 10 * 24 * 60
-    loop_count = reporting_interval_loop_count # Start by reporting, with normal code path
-    error_state = False
-    while True:
-        time_now = datetime.now()
-        time_difference = time_now - last_heartbeat
+    try:
+        last_heartbeat = datetime.now()
+        reporting_interval_loop_count = 10 * 24 * 60
+        loop_count = reporting_interval_loop_count # Start by reporting, with normal code path
+        error_state = False
+        while True:
+            time_now = datetime.now()
+            time_difference = time_now - last_heartbeat
 
-        if time_difference > timedelta(minutes=2):
-            if not error_state:
-                print("Heartbeat lost!")
-                send_email("Heartbeat lost!")
-                send_pushover("Heartbeat lost!")
-            error_state = True
-        else:
-            if error_state:
-                # Non-essential message, intentionally just pushover
-                send_pushover("Heartbeat recovered!")
-            error_state = False
+            if time_difference > timedelta(minutes=2):
+                if not error_state:
+                    print("Heartbeat lost!")
+                    send_email("Heartbeat lost!")
+                    send_pushover("Heartbeat lost!")
+                error_state = True
+            else:
+                if error_state:
+                    # Non-essential message, intentionally just pushover
+                    send_pushover("Heartbeat recovered!")
+                error_state = False
 
-        if loop_count == reporting_interval_loop_count:
-            send_email("Stethoscope is working.")
-            send_pushover("Stethoscope is working.")
-            reporting_interval_loop_count = 0
-        loop_count += 1
-        threading.Event().wait(60)
+            if loop_count == reporting_interval_loop_count:
+                send_email("Stethoscope is working.")
+                send_pushover("Stethoscope is working.")
+                reporting_interval_loop_count = 0
+
+            loop_count += 1
+            threading.Event().wait(60)
+
+    except Exception as e:
+        send_email("FATAL: Stethoscope checking thread exited:" + str(e))
+        send_pushover("FATAL: Stethoscope checking thread exited:" + str(e))
 
 def graceful_exit(signum, frame):
-    print("Flask app is about to terminate...")
-    send_email("Flask app is terminating")
-    send_pushover("Flask app is terminating")
+    print("Stethoscope app is about to terminate...")
+    send_email("Stethoscope app is terminating")
+    send_pushover("Stethoscope app is terminating")
     os._exit()
 
 @app.route('/heartbeat', methods=['POST'])
