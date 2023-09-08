@@ -15,9 +15,9 @@ The behaviour is hard-coded, to keep the code simple (no config validation neede
 
 Optional:
 
-* Create a systemd unit. `cp stethoscope.service /etc/systemd/system`. Edit the username and paths if required.
-* `systemctl daemon-reload`; `systemctl enable stethoscope.service`; 
-    `systemctl start stethoscope.service`
+* Create a systemd unit. `cp stsc.service /etc/systemd/system`. Edit the username and paths if required.
+* `systemctl daemon-reload`; `systemctl enable stsc.service`; 
+    `systemctl start stsc.service`
 
 ## Protocol
 
