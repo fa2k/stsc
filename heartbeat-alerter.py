@@ -43,8 +43,8 @@ def send_pushover(message):
         print("Pushover sending error:", e)
 
 def periodic_check():
+    global last_heartbeat
     try:
-        last_heartbeat = datetime.now()
         reporting_interval_loop_count = 10 * 24 * 60
         loop_count = reporting_interval_loop_count # Start by reporting, with normal code path
         error_state = False
@@ -76,11 +76,26 @@ def periodic_check():
         send_email("FATAL: Stethoscope checking thread exited:" + str(e))
         send_pushover("FATAL: Stethoscope checking thread exited:" + str(e))
 
-def graceful_exit(signum, frame):
-    print("Stethoscope app is about to terminate...")
-    send_email("Stethoscope app is terminating")
-    send_pushover("Stethoscope app is terminating")
-    os._exit()
+class GracefulExiter:
+    def __init__(self):
+        self.orig_handler = None
+
+    def __call__(self, signum, frame):
+        print("Stethoscope app is about to terminate...")
+        send_email("Stethoscope app is terminating")
+        send_pushover("Stethoscope app is terminating")
+        if self.orig_handler:
+            if callable(self.orig_handler):              # Call previous handler
+                self.orig_handler(signum, frame)
+            elif self.orig_handler == signal.SIG_DFL:    # Default disposition
+                signal.signal(signum, signal.SIG_DFL)
+                os.kill(os.getpid(), signum)
+
+def wrap_signal(signal_to_wrap):
+    graceful_exiter = GracefulExiter()
+    orig_handler = signal.signal(signal_to_wrap, graceful_exiter)
+    graceful_exiter.orig_handler = orig_handler
+
 
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
@@ -97,9 +112,8 @@ def explicit_alarm():
     return "Alarm received", 200
 
 # Register the function for SIGTERM and SIGINT
-# Unable to Ctrl-C on Windows, so we don't register exit handlers.
-signal.signal(signal.SIGTERM, graceful_exit)
-signal.signal(signal.SIGINT, graceful_exit)
+wrap_signal(signal.SIGTERM)
+wrap_signal(signal.SIGINT)
 
 if __name__ == '__main__':
     # Start the periodic check in a new thread
