@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 User=username   # Note: username must be specified
+WorkingDirectory=/opt/stsc
 ExecStart=/usr/bin/python3 /opt/stsc/heartbeat-alerter.py
 Restart=always
 

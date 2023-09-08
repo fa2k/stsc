@@ -7,36 +7,46 @@ import requests
 import smtplib
 from email.message import EmailMessage
 import configparser
+import platform
 
 config = configparser.ConfigParser()
-config.read('/etc/stsc.config')
+config.read('config.ini')
 app = Flask(__name__)
 
 last_heartbeat = datetime.now()
 
 def send_email(subject):
-    msg = EmailMessage()
-    msg.set_content(f"{__name__} message at {datetime.datetime.now()}.")
-    msg['Subject'] = subject
-    msg['From'] = config.get("email", "from")
-    msg['To'] = config.get("email", "to")
-    server = smtplib.SMTP(config.get("email", "smtp_host"), config.get("email", "smpt_port"))
-    server.starttls()
-    server.login(config.get("email", "user"), config.get("email", "password"))
-    server.send_message(msg)
-    server.quit()
+    try:
+        msg = EmailMessage()
+        msg.set_content(f"heartbeat-alerter.py message at {datetime.now()}.")
+        msg['Subject'] = subject
+        msg['From'] = config.get("email", "from")
+        msg['To'] = config.get("email", "to")
+        server = smtplib.SMTP(
+            config.get("email", "smtp_host"),
+            config.getint("email", "smtp_port")
+            )
+        server.starttls()
+        server.login(config.get("email", "user"), config.get("email", "password"))
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print("Emailing error:", e)
 
 def send_pushover(message):
-    requests.post("https://api.pushover.net/1/messages.json", data={
-        "token": config.get("pushover", "token"),
-        "user": config.get("pushover", "user"),
-        "message": message
-    })
+    try:
+        requests.post("https://api.pushover.net/1/messages.json", data={
+            "token": config.get("pushover", "token"),
+            "user": config.get("pushover", "user"),
+            "message": message
+        })
+    except Exception as e:
+        print("Pushover sending error:", e)
 
 def periodic_check():
     last_heartbeat = datetime.now()
     reporting_interval_loop_count = 10 * 24 * 60
-    loop_count = 0
+    loop_count = reporting_interval_loop_count # Start by reporting, with normal code path
     error_state = False
     while True:
         time_now = datetime.now()
@@ -78,9 +88,11 @@ def explicit_alarm():
     send_pushover("Explicit alarm triggered")
     return "Alarm received", 200
 
-# Register the function for SIGTERM and SIGINT
-signal.signal(signal.SIGTERM, graceful_exit)
-signal.signal(signal.SIGINT, graceful_exit)
+if platform.system() != 'Windows':
+    # Register the function for SIGTERM and SIGINT
+    # Unable to Ctrl-C on Windows, so we don't register exit handlers.
+    signal.signal(signal.SIGTERM, graceful_exit)
+    signal.signal(signal.SIGINT, graceful_exit)
 
 if __name__ == '__main__':
     # Start the periodic check in a new thread
