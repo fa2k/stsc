@@ -52,7 +52,7 @@ def periodic_check():
             time_now = datetime.now()
             time_difference = time_now - last_heartbeat
 
-            if time_difference > timedelta(minutes=2):
+            if time_difference > timedelta(minutes=3):
                 if not error_state:
                     print("Heartbeat lost!")
                     send_email("Heartbeat lost!")
