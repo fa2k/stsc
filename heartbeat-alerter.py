@@ -2,12 +2,11 @@ from flask import Flask, request
 from datetime import datetime, timedelta
 import threading
 import signal
-import sys
 import requests
 import smtplib
 from email.message import EmailMessage
 import configparser
-import platform
+import os
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -75,7 +74,7 @@ def graceful_exit(signum, frame):
     print("Flask app is about to terminate...")
     send_email("Flask app is terminating")
     send_pushover("Flask app is terminating")
-    sys.exit(0)
+    os._exit()
 
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
@@ -91,11 +90,10 @@ def explicit_alarm():
     send_pushover("Explicit alarm triggered")
     return "Alarm received", 200
 
-if platform.system() != 'Windows':
-    # Register the function for SIGTERM and SIGINT
-    # Unable to Ctrl-C on Windows, so we don't register exit handlers.
-    signal.signal(signal.SIGTERM, graceful_exit)
-    signal.signal(signal.SIGINT, graceful_exit)
+# Register the function for SIGTERM and SIGINT
+# Unable to Ctrl-C on Windows, so we don't register exit handlers.
+signal.signal(signal.SIGTERM, graceful_exit)
+signal.signal(signal.SIGINT, graceful_exit)
 
 if __name__ == '__main__':
     # Start the periodic check in a new thread
@@ -103,4 +101,4 @@ if __name__ == '__main__':
     check_thread.start()
 
     # Start the Flask app
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=64250)

@@ -21,7 +21,7 @@ Optional:
 
 ## Protocol
 
-The system to monitor should send a POST request to http://<hostname>/heartbeat every minute
+The system to monitor should send a POST request to http://<hostname>:64250/heartbeat every minute
 (<hostname> being the host on which this flask app is running).
 
-It can send a request to http://<hostname>/explicit_alarm to trigger a generic alarm message (useful as a fallback alarm mechanism).
+It can send a request to http://<hostname>:64250/explicit_alarm to trigger a generic alarm message (useful as a fallback alarm mechanism).
