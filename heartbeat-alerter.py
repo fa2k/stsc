@@ -59,6 +59,9 @@ def periodic_check():
                 send_pushover("Heartbeat lost!")
             error_state = True
         else:
+            if error_state:
+                # Non-essential message, intentionally just pushover
+                send_pushover("Heartbeat recovered!")
             error_state = False
 
         if loop_count == reporting_interval_loop_count:
